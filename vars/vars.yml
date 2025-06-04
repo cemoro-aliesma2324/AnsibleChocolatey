@@ -1,0 +1,17 @@
+---
+# DOMINIO
+dominio_user: "rcenteno@Suitelec.com"
+dominio_password: "2024Suit25@SISIT"
+# PATHS
+vpn_installer: "\\\\10.20.3.117\\Software\\VPN\\Windows\\anyconnect-win-4.9.06037-core-vpn-predeploy-k9.msi"
+nitro_installer: "\\\\10.20.3.117\\Software\\Nitro\\Nitro.Pro.Ent.13.70.6.57.w64 - XYZ\\nitro_pro13_x64.msi"
+eplan: "\\\\10.20.3.117\\Software\\Eplan\\Eplan ProPanel 2023\\EPLAN_Pro_Panel_2023"
+EBuilderPro_installer: "\\\\10.20.3.117\\Software\\EasyBuilderPro\\EBproV60901524-1\\setup.exe"
+AutoCad: "\\\\10.20.3.117\\Software\\Autodesk_Autocad\\Autocad\\AUTOCAD2022\\AUTOCAD2022.0.1-XYZ"
+Adobe: "\\\\10.20.3.117\\Software\\Adobe\\Adobe.Acrobat.Pro.DC.2019.MejorOpcion.rar"
+Project: "\\\\10.20.3.117\\Software\\Microsoft\\Microsoft project\\project"
+Autofirma: "\\\\10.20.3.117\\Software\\Administracion\\Autofirma\\AutoFirma64\\AutoFirma_64_v1_7_2_installer.exe"
+autofirmaJuntaAndalucia: "\\\\10.20.3.117\\Software\\Administracion\\Autofirma\\Junta de Andalucia\\autofirma_v1_6_0_jav05_installer_64msi\\AutoFirma_v1_6_0_JAv05_installer_64.msi"
+Facturae: "\\\\10.20.3.117\\Software\\Administracion\\Facturae\\Facturae_3.4_Setup.exe"
+SoftwareDelSol: "\\\\10.20.3.117\\Software\\Administracion\\SoftwareDelSol"
+

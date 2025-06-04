@@ -1,0 +1,35 @@
+---
+# Inicio del playbook para instalar actualizaciones sin reiniciar el sistema
+- name: Instalar actualizaciones sin reiniciar Windows
+  hosts: all
+  gather_facts: yes
+  tasks:
+    - name: Crear directorio de logs si no existe
+      win_file:
+        path: C:\log
+        state: directory
+        # Fin de tarea: Directorio de logs verificado
+    - name: Instalar actualizaciones sin reiniciar
+      ansible.windows.win_updates:
+        state: installed
+        reboot: no
+      register: update_result
+        # Fin de tarea: Actualizaciones instaladas y resultado registrado
+    - name: Registrar resultados de la instalación (con actualizaciones)
+      win_shell: |
+        $logFile = "C:\log\log.txt"
+        $updateResult = "{{ update_result }}"
+        if ($updateResult.updates.Count -gt 0) {
+          foreach ($update in $updateResult.updates) {
+            Add-Content -Path $logFile -Value ("Update Title: " + $update.title + " - KB: " + $update.kb_article_ids)
+          }
+        } else {
+          Add-Content -Path $logFile -Value "No updates found or installed."
+        }
+      when: update_result is defined and update_result.updates | length > 0
+        # Fin de tarea: Actualizaciones registradas en el log
+    - name: Registrar mensaje de ausencia de actualizaciones instaladas
+      win_shell: |                   # Ejecuto un script de PowerShell
+        Add-Content -Path C:\log\log.txt -Value "No updates found or installed."
+      when: update_result is not defined or update_result.updates | length == 0
+        # Fin de tarea: Mensaje registrado en el log

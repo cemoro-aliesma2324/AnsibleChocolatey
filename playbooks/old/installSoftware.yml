@@ -1,0 +1,122 @@
+---
+- name: Instalar paquetes esenciales en Windows
+  hosts: all
+  gather_facts: no  # Desactivar si hay errores de compatibilidad
+  vars_files:
+    - ../vars/vars.yml
+
+  tasks:
+    # Tarea 1: Verificar si Chocolatey ya está instalado
+    - name: Comprobar si Chocolatey está instalado
+      ansible.windows.win_stat:
+        path: 'C:\ProgramData\chocolatey\bin\choco.exe'
+      register: choco_installed
+
+    # Tarea 2: Instalar Chocolatey si no está presente
+    - name: Instalar Chocolatey
+      ansible.windows.win_shell: |
+        Set-ExecutionPolicy Bypass -Scope Process -Force
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bo>
+        iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+      args:
+        executable: powershell
+      when: not choco_installed.stat.exists  # Solo se ejecuta si Chocolatey no está instalado
+
+    # Tarea 3: Actualizar Chocolatey (opcional)
+    - name: Actualizar Chocolatey
+      win_chocolatey:
+        name: chocolatey
+        state: latest
+      when: choco_installed.stat.exists  # Solo si ya estaba instalado
+
+    # 2. Instalar aplicaciones desde Chocolatey
+
+    - name: Instalar VPN Cisco
+      win_package:
+        path: "{{ vpn_installer }}"
+        state: present
+        arguments: "/quiet /norestart"
+      become: true
+      become_method: runas
+      become_flags: logon_type=new_credentials logon_flags=netcredentials_only
+      vars:
+        ansible_become_user: "{{ dominio_user }}"
+        ansible_become_password: "{{ dominio_password }}"
+
+    - name: Instalar AnyDesk
+      win_command: choco install anydesk -i --ignore-checksums
+
+    - name: Instalar RustDesk
+      win_chocolatey:
+        name: rustdesk
+        state: present
+
+    - name: Instalar Foxit Reader
+      win_chocolatey:
+        name: foxitreader
+        state: present
+
+    - name: Instalar Office 365
+      win_chocolatey:
+        name: office365business
+        state: present
+
+
+
+
+
+
+
+
+    - name: Instalar Visual Studio Community
+      win_chocolatey:
+        name: visualstudio2022community
+        state: present
+
+    - name: Instalar Visual Studio Code
+      win_chocolatey:
+        name: vscode
+        state: present
+
+    - name: Instalar MySQL Server
+      win_chocolatey:
+        name: mysql  # Opciones: mysql, mysql-server, mysql-workbench
+        state: present
+
+    - name: Instalar MySQL Workbench
+      win_chocolatey:
+        name: mysql.workbench  # Opciones: mysql, mysql-server, mysql-workbench
+        state: present
+
+    - name: Instalar GIMP
+      win_chocolatey:
+        name: gimp
+        state: present
+
+    - name: Instalar Fusion 360
+      win_chocolatey:
+        name: autodesk-fusion360
+        state: present
+
+    #  Reiniciar si es necesario (opcional)
+    - name: Reiniciar equipo si es requerido
+      ansible.windows.win_reboot:
+        reboot_timeout: 600  # 10 minutos de espera
+      when: reboot_required is defined
+
+
+
+#    - name: Instalar cisco VPN
+#      win_package:
+#        path: E:\anyconnect-win-4.9.06037-core-vpn-predeploy-k9.msi
+#        state: absent
+#        arguments: "/quiet /norestart"
+
+
+#    - name: Instalar Visual Studio Community
+#      win_chocolatey:
+#        name: visualstudio2019community
+#        state: absent
+#        # Opcional: Instalar componentes adicionales (ej: .NET, C++)
+#        package_params: --add Microsoft.VisualStudio.Workload.ManagedDesktop
+

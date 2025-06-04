@@ -1,0 +1,80 @@
+---
+# Inicio del playbook para gestionar el reinicio previo y la instalación de actualizaciones
+- name: Verificar reinicio previo e instalar actualizaciones en Windows
+  hosts: all
+  gather_facts: yes
+  tasks:
+    - name: Comprobar si el sistema requiere reinicio
+      win_reg_stat:
+        path: 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update'
+        name: 'RebootRequired'
+      register: reboot_check
+      ignore_errors: yes
+        # Fin de tarea: Estado de reinicio verificado
+    - name: Notificar que se requiere reinicio
+      debug:
+        msg: "El sistema necesita reiniciarse antes de continuar con las actualizaciones."
+      when: reboot_check.exists == true
+        # Fin de tarea: Se notifica la necesidad de reinicio
+    - name: Detener la ejecución del playbook por reinicio requerido
+      meta: end_play
+      when: reboot_check.exists == true
+        # Fin de tarea: Playbook detenido ante la necesidad de reinicio
+    - name: Crear directorio de logs si no existe
+      win_file:
+        path: C:\log
+        state: directory
+      when: reboot_check.exists == false
+        # Fin de tarea: Directorio de logs creado o verificado
+    - name: Descargar actualizaciones de Windows
+      ansible.windows.win_updates:
+        state: downloaded
+      register: update_result
+      when: reboot_check.exists == false
+        # Fin de tarea: Actualizaciones descargadas
+    - name: Registrar inicio de la instalación
+      win_shell: |
+        $logFile = "C:\log\log.txt"
+        Add-Content -Path $logFile -Value ("[INFO] Iniciando la instalación de actualizaciones a las " + (Get-Date).ToString())
+      run_once: true
+      when: reboot_check.exists == false
+        # Fin de tarea: Inicio de instalación registrado
+    - name: Instalar actualizaciones (permitiendo reinicio si es necesario)
+      ansible.windows.win_updates:
+        state: installed
+        reboot: yes
+      register: install_result
+      when: reboot_check.exists == false
+        # Fin de tarea: Actualizaciones instaladas
+    - name: Registrar el estado de cada actualización instalada
+      win_shell: |
+        $logFile = "C:\log\log.txt"
+        $updateTitle = "{{ item.title }}"
+        $kbArticle = "{{ item.kb_article_ids }}"
+        try {
+          Add-Content -Path $logFile -Value ("[INFO] Instalando actualización: " + $updateTitle + " - KB: " + $kbArticle)
+          Start-Sleep -Seconds 5
+          Add-Content -Path $logFile -Value ("[INFO] Actualización instalada correctamente: " + $updateTitle + " - KB: " + $kbArticle)
+        } catch {
+          Add-Content -Path $logFile -Value ("[ERROR] Falló la instalación de la actualización: " + $updateTitle + " - KB: " + $kbArticle + " Error: " + $_.Exception.Message)
+        }
+      loop: "{{ update_result.updates | dict2items }}"
+      when: update_result is defined and update_result.updates | length > 0 and reboot_check.exists == false
+        # Fin de tarea: Cada actualización es registrada conforme se instala
+    - name: Reiniciar el sistema si es requerido
+      win_reboot:
+        reboot_timeout: 600
+      when: install_result.reboot_required == true and reboot_check.exists == false
+        # Fin de tarea: Sistema reiniciado si fue necesario
+    - name: Registrar mensaje de ausencia de actualizaciones
+      win_shell: |
+        Add-Content -Path C:\log\log.txt -Value "[INFO] No se encontraron ni instalaron actualizaciones."
+      when: (update_result is not defined or update_result.updates | length == 0) and reboot_check.exists == false
+        # Fin de tarea: Mensaje registrado en el log para ausencia de actualizaciones
+    - name: Registrar fin de la instalación
+      win_shell: |
+        $logFile = "C:\log\log.txt"
+        Add-Content -Path $logFile -Value ("[INFO] Instalación de actualizaciones completada a las " + (Get-Date).ToString())
+      run_once: true
+      when: reboot_check.exists == false
+        # Fin de tarea: Fin del proceso de instalación registrado

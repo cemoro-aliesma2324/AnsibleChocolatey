@@ -1,0 +1,111 @@
+---
+- name: Instalar paquetes esenciales en Windows
+  hosts: all
+  gather_facts: no  # Desactivar si hay errores de compatibilidad
+  vars_files:
+    - ../vars/vars.yml
+
+  tasks:
+#    - name: Establecer SmartScreenEnabled a Off
+#      win_regedit:
+#        path: HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer
+#        name: SmartScreenEnabled
+#        data: Off
+#        type: string
+#        state: present
+
+    - name: Copiar imagen ISO de AutoCAD desde Software
+      win_copy:
+        src: "{{ AutoCad }}"
+        dest: "C:\\Program Files"
+        remote_src: yes
+      become: yes
+      become_method: runas
+      become_flags: logon_type=new_credentials logon_flags=netcredentials_only
+      vars:
+        ansible_become_user: "{{ dominio_user }}"
+        ansible_become_password: "{{ dominio_password }}"
+
+    # Tarea 1: Verificar/Iniciar el servicio de disco virtual
+    - name: Asegurar que el servicio 'vds' está en ejecución
+      win_service:
+        name: vds
+        start_mode: auto
+        state: started
+
+    # Tarea 2: Montar ISO con PowerShell (alternativa a win_disk_image)
+#    - name: Montar ISO usando PowerShell
+#      win_shell: |
+#        $mount = Mount-DiskImage -ImagePath "C:\\Program Files\\AUTOCAD2022.0.1-XYZ\\AutoCAD_2022_English_Win_64bit.iso" -PassThru
+#        $driveLetter = ($mount | Get-Volume).DriveLetter
+#        Write-Output "RutaMontaje=$driveLetter`:"
+#      register: Write_output
+
+#    - name: Mostrar salida del montaje de la ISO
+#      ansible.builtin.debug:
+#        var: Write_output.stdout
+    # Tarea 4: Instalar AutoCAD
+#    - name: Ejecutar instalador desde la unidad
+#      win_package:
+#        path: "E:\\Setup.exe"
+#        state: present
+#        arguments: "/silent /norestart"
+
+    # Tarea 5: Instalar paquete de idioma
+#    - name: Instalar paquete de idioma español
+#      win_package:
+#        path: "C:\\Program Files\\AUTOCAD2022.0.1-XYZ\\autodesk_autocad_2022_es-es_language_package.exe"
+#        arguments: "/quiet /norestart"
+
+    # Tarea 6: Desmontar ISO
+#    - name: Desmontar imagen ISO
+#      win_shell: Dismount-DiskImage -ImagePath "C:\\Program Files\\AUTOCAD2022.0.1-XYZ\\AutoCAD_2022_English_Win_64bit.iso"
+
+    - name: Montar imagen ISO de AutoCAD
+      win_disk_image:
+        image_path: "C:\\Program Files\\AUTOCAD2022.0.1-XYZ\\AutoCAD_2022_English_Win_64bit.iso"
+        state: present
+      register: mount_result
+
+    - name: Mostrar resultado del montaje
+      debug:
+        var: mount_result
+
+#    - name: Verificar que se obtuvo la letra de la unidad
+#      assert:
+#        that:
+#          - mount_result.mount_paths is defined
+#          - mount_result.mount_paths | length > 0
+#        fail_msg: "No se obtuvo la letra de la unidad; verifica el montaje de la ISO."
+
+#    - name: Ejecutar instalación de AutoCAD
+#      win_package:
+#        path: "{{ mount_result.mount_paths[0] }}\\Setup.exe"
+#        arguments: "/quiet /norestart"
+#        state: present
+#        expected_return_code: [0, 3010]
+
+#    - name: Instalar paquete de idioma
+#      win_package:
+#        path: "C:\\Program Files\\AUTOCAD2022.0.1-XYZ\\autodesk_autocad_2022_es-es_language_package.exe"
+#        arguments: "start /wait /quiet /norestart"
+#        state: present
+
+#    - name: Desmontar imagen ISO
+#      win_disk_image:
+#        image_path: "C:\\Program Files\\AUTOCAD2022.0.1-XYZ\\AutoCAD_2022_English_Win_64bit.iso"
+#        state: absent
+
+#    - name: Establecer SmartScreenEnabled a RequireAdmin
+#      ansible.windows.win_regedit:
+#        path: HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer
+#        name: SmartScreenEnabled
+#        data: RequireAdmin
+#        type: string
+#        state: present
+
+    #  Reiniciar si es necesario (opcional)
+    - name: Reiniciar equipo si es requerido
+      ansible.windows.win_reboot:
+        reboot_timeout: 600  # 10 minutos de espera
+      when: reboot_required is defined

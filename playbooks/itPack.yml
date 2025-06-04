@@ -1,0 +1,77 @@
+---
+- name: Instalar paquetes esenciales en Windows
+  hosts: all
+  gather_facts: no  # Desactivar si hay errores de compatibilidad
+  vars_files:
+    - ../vars/vars.yml
+
+  tasks:
+    # Tarea 1: Verificar si Chocolatey ya está instalado
+    - name: Comprobar si Chocolatey está instalado
+      ansible.windows.win_stat:
+        path: 'C:\ProgramData\chocolatey\bin\choco.exe'
+      register: choco_installed
+
+    # Tarea 2: Instalar Chocolatey si no está presente
+    - name: Instalar Chocolatey
+      ansible.windows.win_shell: |
+        Set-ExecutionPolicy Bypass -Scope Process -Force
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bo>
+        iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+      args:
+        executable: powershell
+      when: not choco_installed.stat.exists  # Solo se ejecuta si Chocolatey no está instalado
+
+    # Tarea 3: Actualizar Chocolatey (opcional)
+    - name: Actualizar Chocolatey
+      win_chocolatey:
+        name: chocolatey
+        state: latest
+      when: choco_installed.stat.exists  # Solo si ya estaba instalado
+
+
+    # Instalar aplicaciones desde Chocolatey
+
+    - name: Instalar Visual Studio Community
+      win_chocolatey:
+        name: visualstudio2022community
+        state: latest
+
+    - name: Instalar Visual Studio Code
+      win_chocolatey:
+        name: vscode
+        state: latest
+
+    - name: Instalar MySQL Server
+      win_chocolatey:
+        name: mysql  # Opciones: mysql, mysql-server, mysql-workbench
+        state: latest
+
+    - name: Instalar MySQL Workbench
+      win_chocolatey:
+        name: mysql.workbench  # Opciones: mysql, mysql-server, mysql-workbench
+        state: latest
+
+    - name: Instalar Git
+      win_chocolatey:
+        name: git
+        state: latest
+
+    - name: Instalar gitextensions
+      win_chocolatey:
+        name: gitextensions
+        state: latest
+
+    # Reiniciar si es necesario (opcional)
+    - name: Reiniciar equipo si es requerido
+      ansible.windows.win_reboot:
+        reboot_timeout: 600  # 10 minutos de espera
+      when: reboot_required is defined
+
+#    - name: Instalar Visual Studio Community
+#      win_chocolatey:
+#        name: visualstudio2019community
+#        state: absent
+#        # Opcional: Instalar componentes adicionales (ej: .NET, C++)
+#        package_params: --add Microsoft.VisualStudio.Workload.ManagedDesktop
+

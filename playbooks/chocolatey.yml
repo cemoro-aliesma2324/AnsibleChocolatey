@@ -1,0 +1,28 @@
+---
+- name: Instalar Chocolatey en Windows
+  hosts: all  # Grupo de hosts Windows en tu inventario
+  gather_facts: no  # Opcional: desactiva la recolección de hechos si no es necesaria
+
+  tasks:
+    # Tarea 1: Verificar si Chocolatey ya está instalado
+    - name: Comprobar si Chocolatey está instalado
+      ansible.windows.win_stat:
+        path: 'C:\ProgramData\chocolatey\bin\choco.exe'
+      register: choco_installed
+
+    # Tarea 2: Instalar Chocolatey si no está presente
+    - name: Instalar Chocolatey
+      ansible.windows.win_shell: |
+        Set-ExecutionPolicy Bypass -Scope Process -Force
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+        iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+      args:
+        executable: powershell
+      when: not choco_installed.stat.exists  # Solo se ejecuta si Chocolatey no está instalado
+
+    # Tarea 3: Actualizar Chocolatey (opcional)
+    - name: Actualizar Chocolatey
+      win_chocolatey:
+        name: chocolatey
+        state: latest
+      when: choco_installed.stat.exists  # Solo si ya estaba instalado

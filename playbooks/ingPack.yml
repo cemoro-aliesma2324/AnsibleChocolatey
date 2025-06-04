@@ -1,0 +1,77 @@
+---
+- name: Instalar paquetes esenciales en Windows
+  hosts: all
+  gather_facts: no  # Desactivar si hay errores de compatibilidad
+  vars_files:
+    - ../vars/vars.yml
+
+  tasks:
+    # Tarea 1: Verificar si Chocolatey ya está instalado
+    - name: Comprobar si Chocolatey está instalado
+      ansible.windows.win_stat:
+        path: 'C:\ProgramData\chocolatey\bin\choco.exe'
+      register: choco_installed
+
+    # Tarea 2: Instalar Chocolatey si no está presente
+    - name: Instalar Chocolatey
+      ansible.windows.win_shell: |
+        Set-ExecutionPolicy Bypass -Scope Process -Force
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bo>
+        iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+      args:
+        executable: powershell
+      when: not choco_installed.stat.exists  # Solo se ejecuta si Chocolatey no está instalado
+
+    # Tarea 3: Actualizar Chocolatey (opcional)
+    - name: Actualizar Chocolatey
+      win_chocolatey:
+        name: chocolatey
+        state: latest
+      when: choco_installed.stat.exists  # Solo si ya estaba instalado
+
+
+    - name: Instalar Nitro
+      win_package:
+        path: "{{ nitro_installer }}"
+        state: present
+        arguments: "/quiet /norestart"
+      become: true
+      become_method: runas
+      become_flags: logon_type=new_credentials logon_flags=netcredentials_only
+      vars:
+        ansible_become_user: "{{ dominio_user }}"
+        ansible_become_password: "{{ dominio_password }}"
+
+    - name: Copiar ficheros de Eplan desde Software a Archivos de programas
+      win_copy:
+        src: "{{ eplan }}"
+        dest: "C:\\Program Files"
+        remote_src: yes
+      become: yes
+      become_method: runas
+      become_flags: logon_type=new_credentials logon_flags=netcredentials_only
+      vars:
+        ansible_become_user: "{{ dominio_user }}"
+        ansible_become_password: "{{ dominio_password }}"
+      register: copy_eplan
+
+#    - name: Instalar EPLAN mediante Setup Manager
+#      win_package:
+#        path: "C:\\Program Files\\EPLAN_Pro_Panel_2023\\Setup Manager\\EPLAN Setup Manager 2023.msi"
+#        arguments: "/silent /norestart"
+#        state: present
+#      when: copy_eplan is succeeded
+
+#    - name: Establecer SmartScreenEnabled a RequireAdmin
+#      ansible.windows.win_regedit:
+#        path: HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer
+#        name: SmartScreenEnabled
+#        data: RequireAdmin
+#        type: string
+#        state: present
+
+    #  Reiniciar si es necesario (opcional)
+    - name: Reiniciar equipo si es requerido
+      ansible.windows.win_reboot:
+        reboot_timeout: 600  # 10 minutos de espera
+      when: reboot_required is defined

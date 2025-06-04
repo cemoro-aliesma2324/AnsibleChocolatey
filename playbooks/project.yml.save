@@ -1,0 +1,57 @@
+---
+- name: Desplegar Microsoft Project 2021
+  hosts: all
+  gather_facts: no
+  vars_files:
+    - ../vars/vars.yml
+
+  tasks:
+    - name: Copiar imagen ISO de AutoCAD desde Software
+      win_copy:
+        src: "{{ Project }}"
+        dest: "C:\\Program Files"
+        remote_src: yes
+      become: yes
+      become_method: runas
+      become_flags: logon_type=new_credentials logon_flags=netcredentials_only
+      vars:
+        ansible_become_user: "{{ dominio_user }}"
+        ansible_become_password: "{{ dominio_password }}"
+
+    - name: Verificar que se copiaron los archivos correctamente
+      win_stat:
+        path: "C:\\Program Files\\Project"
+      register: stat_config
+
+    - name: Falla si falta el archivo de configuración
+      fail:
+        msg: "No se encontró Project en Archivos de Programa"
+      when: not stat_config.stat.exists
+
+    - name: Instalar Microsoft Project 2021
+      win_shell: |
+        cd /d "C:\\Program Files\\Project"
+        setup.exe /configure project2021.xml
+      args:
+        executable: cmd
+      register: install_result
+      timeout: 3600  # hasta 1 hora
+
+#    - name: Borrar carpeta de instalación
+#      win_file:
+#        path: "C:\\Program Files\\Project"
+#        state: absent
+#      when: install_result.rc == 0
+
+#    - name: Reportar resultado de la instalación
+#      debug:
+#        msg:
+#          - "Resultado de copia: {{ copy_result.rc }}"
+#          - "Resultado de instalación: {{ install_result.rc }}"
+
+
+    #  Reiniciar si es necesario (opcional)
+    - name: Reiniciar equipo si es requerido
+      ansible.windows.win_reboot:
+        reboot_timeout: 600  # 10 minutos de espera
+      when: reboot_required is defined

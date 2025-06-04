@@ -1,0 +1,36 @@
+---
+# Inicio del playbook para buscar, descargar y registrar actualizaciones
+- name: Buscar y registrar actualizaciones de Windows
+  hosts: all
+  gather_facts: yes
+  tasks:
+    - name: Crear directorio de logs si no existe
+      win_file:
+        path: C:\log
+        state: directory
+        # Fin de tarea: Directorio de logs creado o verificado
+    - name: Buscar y descargar actualizaciones sin instalarlas
+      ansible.windows.win_updates:
+        state: downloaded
+      register: update_result
+        # Fin de tarea: Actualizaciones descargadas y resultado almacenado
+    - name: Registrar resultados de actualizaciones (con actualizaciones)
+      win_shell: |
+        # Defino el archivo de log y preparo el resultado de actualizaciones
+        $logFile = "C:\log\log.txt"
+        $updateResult = "{{ update_result }}"
+        # Si se encontraron actualizaciones, itero y registro cada una
+        if ($updateResult.updates.Count -gt 0) {
+          foreach ($update in $updateResult.updates) {
+            Add-Content -Path $logFile -Value ("Update Title: " + $update.title + " - KB: " + $update.kb_article_ids)
+          }
+        } else {
+          Add-Content -Path $logFile -Value "No updates found or downloaded."
+        }
+      when: update_result is defined and update_result.updates | length > 0
+        # Fin de tarea: Resultados registrados en el log
+    - name: Registrar mensaje de ausencia de actualizaciones
+      win_shell: |
+        Add-Content -Path C:\log\log.txt -Value "No updates found or downloaded."
+      when: update_result is not defined or update_result.updates | length == 0
+        # Fin de tarea: Mensaje de log para ausencia de actualizaciones
