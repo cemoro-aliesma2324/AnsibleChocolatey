@@ -1,0 +1,70 @@
+README - Explicación de comandos SSH
+
+Estos comandos son útiles para conectarte de forma segura a otros ordenadores (servidores, máquinas virtuales, etc.) usando SSH (Secure Shell).
+
+1. ssh -i ~/.ssh/id_ed25519 admin@10.20.3.101
+
+Este comando sirve para conectarte a un servidor usando una clave SSH específica.
+
+ssh: Es el comando principal para iniciar una conexión SSH.
+-i ~/.ssh/id_ed25519: Le dice a SSH que use la clave privada que está en la ruta ~/.ssh/id_ed25519 para autenticarte.
+~ es una abreviatura para tu carpeta personal (ej: /home/usuario).
+id_ed25519 es el nombre común para una clave SSH (puedes tener otros nombres).
+admin@10.20.3.101: Indica el usuario (admin) y la dirección IP (10.20.3.101) del servidor al que te quieres conectar.
+
+¿Cuándo usarlo?
+
+Cuando quieres conectarte a un servidor y no quieres escribir la contraseña cada vez.
+Cuando tienes varias claves SSH y quieres usar una específica.
+
+Ejemplo:
+
+Si quieres conectarte al servidor 10.20.3.101 como usuario admin usando la clave id_ed25519, este es el comando.
+
+2. ssh-keygen -f '/home/kali/.ssh/known_hosts' -R '10.20.4.108'
+
+Este comando sirve para eliminar una entrada de la lista de servidores conocidos.
+
+ssh-keygen: Es el comando para generar, gestionar y convertir claves SSH.
+-f '/home/kali/.ssh/known_hosts': Especifica el archivo donde se guardan las claves de los servidores conocidos.
+/home/kali/.ssh/known_hosts es la ruta a ese archivo (puede variar según tu sistema).
+-R '10.20.4.108': Le dice a ssh-keygen que elimine la entrada correspondiente al servidor con la dirección IP 10.20.4.108.
+
+¿Cuándo usarlo?
+
+Cuando has reinstalado un servidor y su clave SSH ha cambiado.
+Cuando te sale un error de "posible ataque man-in-the-middle" al conectarte a un servidor.
+Cuando quieres limpiar la lista de servidores conocidos.
+
+Ejemplo:
+
+Si el servidor 10.20.4.108 ha cambiado su clave SSH, este comando elimina la entrada antigua para que puedas conectarte de nuevo.
+
+3. ssh-copy-id -i ~/.ssh/id_ed25519 admin@10.20.3.101
+
+Este comando sirve para copiar tu clave pública SSH a un servidor.
+
+ssh-copy-id: Es un script que facilita la copia de tu clave pública a un servidor.
+-i ~/.ssh/id_ed25519: Le dice a ssh-copy-id que use la clave pública que está en la ruta ~/.ssh/id_ed25519.pub.
+Importante: Este comando necesita la clave pública (que termina en .pub).
+admin@10.20.3.101: Indica el usuario (admin) y la dirección IP (10.20.3.101) del servidor al que quieres copiar la clave.
+
+¿Cuándo usarlo?
+
+Cuando quieres configurar la autenticación por clave SSH para no tener que escribir la contraseña cada vez que te conectas.
+Después de generar una nueva clave SSH.
+
+Ejemplo:
+
+Si quieres copiar tu clave pública al servidor 10.20.3.101 para que el usuario admin pueda conectarse sin contraseña, este es el comando.
+
+Importante:
+
+Este comando te pedirá la contraseña del usuario admin en el servidor 10.20.3.101 la primera vez.
+Después de ejecutar este comando, podrás conectarte sin contraseña (si todo está configurado correctamente).
+
+Resumen rápido:
+
+ssh: Conectarse a un servidor.
+ssh-keygen: Gestionar claves SSH.
+ssh-copy-id: Copiar tu clave pública a un servidor.
